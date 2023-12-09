@@ -1,11 +1,8 @@
-[package]
-name = "git_repo"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+resolver = "2"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+members = ["git_lib", "examples/*"]
 
-[dependencies]
-anyhow = "1.0.75"
-log = "0.4.20"
-thiserror = "1.0.50"
+[workspace.dependencies]
+git_lib = { path = "./git_lib" }
+
