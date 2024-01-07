@@ -3,16 +3,14 @@ use git_lib::repo::GitRepo;
 use std::path::PathBuf;
 
 fn main() -> Result<()> {
-    let cloned = GitRepo::from_ssh_uri_force(
+    let urls = [
         "git@github.com:pitoniak32/git_repo.git",
-        &PathBuf::from("/tmp/git_repo"),
-    )?;
+        "git@github.com:pitoniak32/mukduk.git",
+    ];
+
+    let cloned = GitRepo::from_ssh_uri_multi(&urls, &PathBuf::from("/tmp/tester"));
 
     dbg!(cloned);
-
-    let existing = GitRepo::from_existing(&PathBuf::from("/tmp/git_repo"))?;
-
-    dbg!(existing);
 
     Ok(())
 }

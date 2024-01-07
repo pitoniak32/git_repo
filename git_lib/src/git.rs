@@ -1,3 +1,4 @@
+use git_url_parse::GitUrl;
 use std::{
     ffi::OsStr,
     io,
@@ -70,6 +71,10 @@ impl Git {
             }
         }
         false
+    }
+
+    pub fn parse_url(url: &str) -> git_url_parse::Result<GitUrl> {
+        GitUrl::parse(url)
     }
 }
 

@@ -1,3 +1,4 @@
+use git_url_parse::Scheme;
 use std::{
     fs::{self},
     io,
@@ -29,6 +30,9 @@ pub enum GitRepoError {
 
     #[error("failed to clone git repo into {0}. this path is already a git repo.")]
     AlreadyExistsError(String),
+
+    #[error("failed to clone git repo with uri {0}. invalid ssh uri.")]
+    InvalidGitSshUri(String),
 }
 
 #[derive(Debug)]
@@ -90,6 +94,28 @@ impl GitRepo {
         })?;
 
         GitRepo::from_existing(to_path)
+    }
+
+    pub fn from_ssh_uri_multi(
+        ssh_uris: &[&str],
+        to_root_path: &PathBuf,
+    ) -> Vec<Result<GitRepo, GitRepoError>> {
+        let mut repo_results = vec![];
+        for ssh_uri in ssh_uris {
+            if let Ok(parsed_uri) = Git::parse_url(ssh_uri) {
+                if parsed_uri.scheme == Scheme::GitSsh || parsed_uri.scheme == Scheme::Ssh {
+                    repo_results.push(GitRepo::from_ssh_uri(
+                        ssh_uri,
+                        &to_root_path.join(parsed_uri.name),
+                    ));
+                } else {
+                    repo_results.push(Err(GitRepoError::InvalidGitSshUri(ssh_uri.to_string())));
+                }
+            } else {
+                repo_results.push(Err(GitRepoError::InvalidGitSshUri(ssh_uri.to_string())));
+            }
+        }
+        repo_results
     }
 
     /// Sets remote_url to value of `origin`.
