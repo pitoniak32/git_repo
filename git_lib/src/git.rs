@@ -27,11 +27,14 @@ pub enum GitCmdError {
     Clone(#[source] io::Error),
 }
 
+const GIT_COMMAND: &str = "git";
+
 pub struct Git;
+
 impl Git {
     pub fn clone(uri: &str, to_path: PathBuf) -> Result<Output, GitCmdError> {
         wrap_cmd(
-            "git",
+            GIT_COMMAND,
             [
                 "clone".to_string(),
                 uri.to_string(),
@@ -39,6 +42,42 @@ impl Git {
             ],
         )
         .map_err(GitCmdError::Clone)
+    }
+
+    pub fn status<P>(repo_path: &P) -> Result<Option<String>, GitCmdError>
+    where
+        P: AsRef<Path>,
+    {
+        let output = wrap_cmd_dir(GIT_COMMAND, ["status"], repo_path)
+            .map_err(GitCmdError::IsRepositoryIo)?;
+
+        let status = String::from_utf8(output.stdout)
+            .map_err(GitCmdError::GetRemoteError)?
+            .trim()
+            .to_string();
+        if status.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(status))
+    }
+
+    pub fn log<P>(repo_path: &P) -> Result<Option<String>, GitCmdError>
+    where
+        P: AsRef<Path>,
+    {
+        let output =
+            wrap_cmd_dir(GIT_COMMAND, ["log"], repo_path).map_err(GitCmdError::IsRepositoryIo)?;
+
+        let log = String::from_utf8(output.stdout)
+            .map_err(GitCmdError::GetRemoteError)?
+            .trim()
+            .to_string();
+        if log.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(log))
     }
 
     pub fn get_remote_url<P>(repo_path: &P) -> Result<Option<String>, GitCmdError>
@@ -118,4 +157,11 @@ pub fn log_output(output: &Output) {
     } else if !output.stderr.is_empty() {
         log::warn!("{}", String::from_utf8_lossy(&output.stderr).trim());
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn it_works() {}
 }

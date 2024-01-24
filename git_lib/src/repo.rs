@@ -1,8 +1,7 @@
 use git_url_parse::Scheme;
 use std::{
-    fs::{self},
-    io,
-    path::PathBuf,
+    fs, io,
+    path::{Path, PathBuf},
     string::FromUtf8Error,
 };
 use thiserror::Error;
@@ -98,7 +97,7 @@ impl GitRepo {
 
     pub fn from_ssh_uri_multi(
         ssh_uris: &[&str],
-        to_root_path: &PathBuf,
+        to_root_path: &Path,
     ) -> Vec<Result<GitRepo, GitRepoError>> {
         let mut repo_results = vec![];
         for ssh_uri in ssh_uris {
