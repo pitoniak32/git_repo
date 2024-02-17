@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["git_lib", "examples/*"]
+members = ["git_lib", "examples"]
 
 [workspace.dependencies]
 git_lib = { path = "./git_lib" }
-

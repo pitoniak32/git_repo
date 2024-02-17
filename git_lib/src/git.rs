@@ -4,7 +4,7 @@ use std::{
     io,
     path::Path,
     process::{Command, Output, Stdio},
-    str::ParseBoolError,
+    str::{FromStr, ParseBoolError},
     string::FromUtf8Error,
 };
 use thiserror::Error;
@@ -28,6 +28,9 @@ pub enum GitCmdError {
 
     #[error("failed to clone: {0}")]
     Clone(#[source] io::Error),
+
+    #[error("failed parsing git url: {0}")]
+    ParseUrlError(#[source] <GitUrl as FromStr>::Err),
 }
 
 const GIT_COMMAND: &str = "git";
@@ -133,8 +136,8 @@ impl Git {
         false
     }
 
-    pub fn parse_url(url: &str) -> git_url_parse::Result<GitUrl> {
-        GitUrl::parse(url)
+    pub fn parse_url(url: &str) -> Result<GitUrl, GitCmdError> {
+        GitUrl::parse(url).map_err(GitCmdError::ParseUrlError)
     }
 }
 

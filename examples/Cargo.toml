@@ -1,0 +1,20 @@
+[package]
+name = "examples"
+version = "0.1.0"
+publish = false
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dev-dependencies]
+git_lib = { workspace = true }
+anyhow = "1.0.79"
+assert_fs = "1.1.1"
+
+[[example]]
+name = "kitchen-sink"
+path = "kitchen-sink.rs"
+
+[[example]]
+name = "clone-multi"
+path = "clone-multi.rs"
