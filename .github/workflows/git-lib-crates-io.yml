@@ -1,0 +1,9 @@
+name: Publish Crate
+on:
+  workflow_dispatch: {}
+jobs:
+  publish-crate:
+    uses: pitoniak32/actions/.github/workflows/rust-publish-crate.yml@main
+    with:
+      package-name: git_lib 
+    secrets: inherit
