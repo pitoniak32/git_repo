@@ -2,7 +2,7 @@ use git_url_parse::GitUrl;
 use std::{
     ffi::OsStr,
     io,
-    path::{Path, PathBuf},
+    path::Path,
     process::{Command, Output, Stdio},
     str::ParseBoolError,
     string::FromUtf8Error,
@@ -23,6 +23,9 @@ pub enum GitCmdError {
     #[error("failed to check if directory is git repo: {0}")]
     IsRepositoryIo(#[source] io::Error),
 
+    #[error("failed to initalize directory as git repo: {0}")]
+    InitError(#[source] io::Error),
+
     #[error("failed to clone: {0}")]
     Clone(#[source] io::Error),
 }
@@ -32,7 +35,7 @@ const GIT_COMMAND: &str = "git";
 pub struct Git;
 
 impl Git {
-    pub fn clone(uri: &str, to_path: PathBuf) -> Result<Output, GitCmdError> {
+    pub fn clone(uri: &str, to_path: &Path) -> Result<Output, GitCmdError> {
         wrap_cmd(
             GIT_COMMAND,
             [
@@ -80,11 +83,29 @@ impl Git {
         Ok(Some(log))
     }
 
-    pub fn get_remote_url<P>(repo_path: &P) -> Result<Option<String>, GitCmdError>
+    pub fn init(path: &Path) -> Result<(), GitCmdError> {
+        let _ = wrap_cmd_dir("git", ["init"], path).map_err(GitCmdError::InitError)?;
+        Ok(())
+    }
+
+    pub fn add_remote(
+        remote_name: &str,
+        remote_url: &str,
+        repo_path: &Path,
+    ) -> Result<(), GitCmdError> {
+        let _ = wrap_cmd_dir("git", ["remote", "add", remote_name, remote_url], repo_path)
+            .map_err(GitCmdError::InitError)?;
+        Ok(())
+    }
+
+    pub fn get_remote_url<P>(
+        remote_name: &str,
+        repo_path: &P,
+    ) -> Result<Option<String>, GitCmdError>
     where
         P: AsRef<Path>,
     {
-        let output = wrap_cmd_dir("git", ["remote", "get-url", "origin"], repo_path)
+        let output = wrap_cmd_dir("git", ["remote", "get-url", remote_name], repo_path)
             .map_err(GitCmdError::IsRepositoryIo)?;
 
         let remote = String::from_utf8(output.stdout)
@@ -161,7 +182,67 @@ pub fn log_output(output: &Output) {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
 
-    #[test]
-    fn it_works() {}
+    use anyhow::Result;
+
+    use assert_fs::*;
+    use predicates::prelude::*;
+    use rstest::{fixture, rstest};
+
+    use super::Git;
+
+    #[fixture]
+    fn temp_directory_fs() -> TempDir {
+        // Arrange
+        TempDir::new().expect("should be able to make temp dir")
+    }
+
+    #[fixture]
+    fn temp_repo_fs(temp_directory_fs: TempDir) -> TempDir {
+        // Arrange
+        Git::init(temp_directory_fs.path()).expect("git repo should init in temp dir");
+        temp_directory_fs
+    }
+
+    #[rstest]
+    fn should_init_directory_as_git_repo(temp_directory_fs: TempDir) -> Result<()> {
+        // Arrange / Act
+        Git::init(temp_directory_fs.path())?;
+
+        // Assert
+        assert!(
+            predicate::path::exists().eval(&temp_directory_fs.path().join(".git").join("hooks"))
+        );
+        assert!(predicate::path::exists().eval(&temp_directory_fs.path().join(".git").join("info")));
+        assert!(
+            predicate::path::exists().eval(&temp_directory_fs.path().join(".git").join("objects"))
+        );
+        assert!(predicate::path::exists().eval(&temp_directory_fs.path().join(".git").join("refs")));
+        assert!(predicate::path::exists()
+            .eval(&temp_directory_fs.path().join(".git").join("description")));
+        assert!(
+            predicate::path::exists().eval(&temp_directory_fs.path().join(".git").join("config"))
+        );
+        assert!(predicate::path::exists().eval(&temp_directory_fs.path().join(".git").join("HEAD")));
+
+        Ok(())
+    }
+
+    #[rstest]
+    fn should_add_remote_and_get_it_from_repo(temp_repo_fs: TempDir) -> Result<()> {
+        // Arrange
+        let remote = "git@github.com:test_user/test_repo1.git";
+
+        // Act
+        Git::add_remote("origin", remote, temp_repo_fs.path())?;
+        let config_content = fs::read_to_string(temp_repo_fs.path().join(".git").join("config"))?;
+        let found_remote = Git::get_remote_url("origin", &temp_repo_fs.path())?;
+
+        // Assert
+        assert!(config_content.contains(&format!("[remote \"origin\"]\n\turl = {remote}")));
+        assert_eq!(found_remote, Some(remote.to_string()));
+
+        Ok(())
+    }
 }

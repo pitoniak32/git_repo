@@ -8,7 +8,7 @@ fn main() -> Result<()> {
         "git@github.com:pitoniak32/mukduk.git",
     ];
 
-    let cloned = GitRepo::from_ssh_uri_multi(&urls, &PathBuf::from("/tmp/tester"));
+    let cloned = GitRepo::from_url_multi(&urls, &PathBuf::from("/tmp/tester"));
 
     dbg!(cloned);
 
