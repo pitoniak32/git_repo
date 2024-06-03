@@ -9,6 +9,8 @@ use std::{
 };
 use thiserror::Error;
 
+use crate::git_uri::GitUri;
+
 #[derive(Error, Debug)]
 pub enum GitCmdError {
     #[error("failed to check if directory is git repo: {0}")]
@@ -30,7 +32,7 @@ pub enum GitCmdError {
     Clone(#[source] io::Error),
 
     #[error("failed parsing git url: {0}")]
-    ParseUrlError(#[source] <GitUrl as FromStr>::Err),
+    ParseUriError(#[source] <GitUrl as FromStr>::Err),
 }
 
 const GIT_COMMAND: &str = "git";
@@ -136,8 +138,8 @@ impl Git {
         false
     }
 
-    pub fn parse_url(url: &str) -> Result<GitUrl, GitCmdError> {
-        GitUrl::parse(url).map_err(GitCmdError::ParseUrlError)
+    pub fn parse_uri(url: &str) -> Result<GitUri, GitCmdError> {
+        Ok(GitUri::from(GitUrl::parse(url).map_err(GitCmdError::ParseUriError)?))
     }
 }
 
