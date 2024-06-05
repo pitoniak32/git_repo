@@ -43,7 +43,7 @@ fn main() -> Result<()> {
     let remote = Git::get_remote_url("origin", &new_repo_path)?;
     dbg!(&remote);
 
-    let parsed_remote = Git::parse_url(&remote.expect("should be some"))?;
+    let parsed_remote = Git::parse_uri(&remote.expect("should be some"))?;
     dbg!(&parsed_remote);
 
     // Explicitly cleaning the temp dir.

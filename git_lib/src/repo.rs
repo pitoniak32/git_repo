@@ -100,7 +100,7 @@ impl GitRepo {
     ) -> Vec<Result<GitRepo, GitRepoError>> {
         let mut repo_results = vec![];
         for remote_url in remote_urls {
-            if let Ok(parsed_uri) = Git::parse_url(remote_url) {
+            if let Ok(parsed_uri) = Git::parse_uri(remote_url) {
                 repo_results.push(GitRepo::from_url(
                     remote_url,
                     &to_root_path.join(parsed_uri.name),
